@@ -135,7 +135,15 @@ def run_dns_server():
                     if isinstance(answer_data, str):
                         rdata_list = [dns.rdata.from_text(dns.rdataclass.IN, qtype, answer_data)]
                     else:
-                        rdata_list = [dns.rdata.from_text(dns.rdataclass.IN, qtype, data) for data in answer_data]
+                        # Special-case TXT records so the Fernet token is preserved exactly (needs quotes)
+if qtype == dns.rdatatype.TXT:
+    _txt = answer_data[0]
+    # Ensure a single, quoted TXT chunk
+    if not (_txt.startswith(\"\") and _txt.endswith(\"\")):
+        _txt = f'\"{_txt}\"'
+    rdata_list = [dns.rdata.from_text(dns.rdataclass.IN, qtype, _txt)]
+else:
+    rdata_list = [dns.rdata.from_text(dns.rdataclass.IN, qtype, data) for data in answer_data]
                 for rdata in rdata_list:
                     rr = dns.rrset.RRset(question.name, dns.rdataclass.IN, qtype)
                     rr.add(rdata)
